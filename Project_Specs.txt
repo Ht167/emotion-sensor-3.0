@@ -1,0 +1,146 @@
+================================================================================
+                    PROJECT SPECIFICATIONS — EMOTION DETECTION 2.0
+                    Real-Time Facial Emotion Recognition System
+================================================================================
+
+Prepared for: Academic Project Report
+Date: April 2026
+Author: Himanshul
+
+================================================================================
+1. MODEL ARCHITECTURE
+================================================================================
+Type: Convolutional Neural Network (CNN)
+Framework: TensorFlow / Keras (Sequential API)
+Structure:
+  - 4 Convolutional Blocks, each containing:
+      • Conv2D layer (3×3 kernel, ReLU activation, 'same' padding)
+      • BatchNormalization layer
+      • MaxPooling2D layer (2×2 pool size)
+      • Dropout layer (25% rate)
+  - Flatten layer
+  - Dense layer (256 units, ReLU activation)
+  - BatchNormalization + Dropout (50%)
+  - Output Dense layer (7 units, Softmax activation)
+
+Filter progression: 32 → 64 → 128 → 256
+Total trainable parameters: ~800,000 (lightweight, CPU-optimized)
+
+================================================================================
+2. TRAINING FOUNDATION
+================================================================================
+Dataset: FER2013 (Facial Expression Recognition 2013)
+Source: Kaggle / IEEE competition
+Statistics:
+  - Total images: 35,887 labeled facial images
+  - Training set: 28,709 images
+  - Validation set: 3,589 images
+  - Test set: 3,589 images
+  - Image dimensions: 48×48 pixels, grayscale
+  - Classes: 7 emotion categories
+
+Note: The model architecture is designed and optimized for this dataset.
+Training is performed separately; this project provides the architecture
+definition and the inference pipeline.
+
+================================================================================
+3. FACE DETECTION ALGORITHM
+================================================================================
+Algorithm: Haar Cascade Frontal Face Default
+Implementation: OpenCV cv2.CascadeClassifier
+Cascade File: haarcascade_frontalface_default.xml (bundled with OpenCV)
+
+How it works:
+  - Uses Haar-like features (rectangular intensity difference patterns)
+  - Employs a cascade of increasingly complex classifiers
+  - Scans the image at multiple scales (scaleFactor = 1.3)
+  - Requires minimum 5 overlapping detections (minNeighbors = 5)
+  - Ignores regions smaller than 30×30 pixels
+
+Advantages for this project:
+  - Extremely fast — real-time performance on CPU
+  - No GPU required
+  - Pre-trained model ships with OpenCV (zero setup)
+
+================================================================================
+4. INPUT SPECIFICATIONS
+================================================================================
+Raw Input: BGR color frame from webcam (any resolution)
+
+Preprocessing Pipeline:
+  Step 1 — Face Detection: Haar Cascade identifies face bounding box (x, y, w, h)
+  Step 2 — Crop: Extract face region of interest (ROI) from frame
+  Step 3 — Grayscale Conversion: BGR → single channel (reduces 3 channels to 1)
+  Step 4 — Resize: Scale to 48×48 pixels (matches FER2013 / CNN input)
+  Step 5 — Pixel Normalization: Divide by 255.0 → values in [0.0, 1.0]
+  Step 6 — Reshape: (48, 48) → (1, 48, 48, 1) for Keras batch inference
+
+Final tensor shape: (1, 48, 48, 1) — float32, normalized
+
+================================================================================
+5. OUTPUT LOGIC
+================================================================================
+Activation Function: Softmax (on final Dense layer with 7 units)
+
+Softmax Formula:
+  P(class_i) = exp(z_i) / Σ exp(z_j)  for j = 1 to 7
+
+Properties:
+  - Converts raw logits into a valid probability distribution
+  - All 7 outputs are positive and sum to exactly 1.0
+  - The class with the highest probability is selected as the prediction
+
+Emotion Classes (by FER2013 index):
+  Index 0 → Angry
+  Index 1 → Disgust
+  Index 2 → Fear
+  Index 3 → Happy
+  Index 4 → Sad
+  Index 5 → Surprise
+  Index 6 → Neutral
+
+Display: Emotion label + confidence percentage drawn on video feed.
+
+================================================================================
+6. TECHNOLOGY STACK
+================================================================================
+Language: Python 3.8+
+Dependencies:
+  - opencv-python >= 4.8.0  (webcam, face detection, drawing)
+  - tensorflow-cpu >= 2.15.0 (CNN model, Keras API)
+  - numpy >= 1.24.0 (array operations, normalization)
+
+Target Platform: Standard PC with CPU only (no GPU required)
+
+================================================================================
+7. PRIVACY & SECURITY
+================================================================================
+All processing is performed locally on the user's machine.
+No images, video frames, or emotion data are transmitted externally.
+No internet connection is required during operation.
+A "Privacy Status: Local Processing Only" footer is displayed on the video feed.
+
+================================================================================
+8. FILE STRUCTURE
+================================================================================
+emotion detection 2.0/
+├── requirements.txt       — Python package dependencies
+├── model_structure.py     — CNN architecture definition ("The Brain")
+├── processing.py          — Face detection & preprocessing ("The Logic")
+├── main.py                — Live webcam application ("The Application")
+├── README.md              — Project documentation & how-to guide
+├── Project_Specs.txt      — This file (technical specifications)
+└── emotion_model.h5       — Pre-trained model weights (after training)
+
+================================================================================
+9. PERFORMANCE TARGETS
+================================================================================
+Frame Rate: 15-30 FPS on modern laptop CPU
+Face Detection: < 20ms per frame (Haar Cascade)
+CNN Inference: < 50ms per face (TensorFlow CPU)
+Memory Usage: < 500MB RAM
+Model Size: ~3MB (weights file)
+
+================================================================================
+END OF SPECIFICATIONS
+================================================================================

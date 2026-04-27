@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection 2.0 — Real-Time AI</title>
+    <meta name="description" content="Real-time facial emotion detection powered by CNN and OpenCV. Detects 7 emotions in real-time using a 4-block CNN trained on FER2013.">
+    <meta name="author" content="Rahul">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎭</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Background effects -->
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+
+    <!-- Header -->
+    <header class="header" id="appHeader">
+        <div class="header-left">
+            <span class="logo">🎭</span>
+            <div>
+                <h1>Emotion Detection <span class="version">2.0</span></h1>
+                <p class="subtitle">Real-Time CNN Classifier</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot"></span>
+                <span class="status-text" id="statusText">Initializing...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Left: Video Feed -->
+        <section class="video-section">
+            <div class="video-card glass" id="videoCard">
+                <div class="video-wrapper">
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="overlay"></canvas>
+                    <div class="video-hud">
+                        <span class="hud-item" id="fpsDisplay">— FPS</span>
+                        <button class="cam-toggle" id="camToggle" title="Toggle Camera">
+                            <svg class="cam-icon-on" id="camIconOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            <svg class="cam-icon-off hidden" id="camIconOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="1" y1="1" x2="23" y2="23"/><path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/><path d="M15 13a3 3 0 1 0-2.12-5.12"/>
+                            </svg>
+                        </button>
+                        <span class="hud-item" id="faceCount">0 faces</span>
+                    </div>
+                    <!-- Startup overlay -->
+                    <div class="start-overlay" id="startOverlay">
+                        <button class="start-btn" id="startBtn">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            <span>Start Camera</span>
+                        </button>
+                        <p class="start-hint">Click to enable webcam access</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Model Info Card -->
+            <div class="model-info glass">
+                <div class="model-info-row">
+                    <span class="model-tag">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                        4-Block CNN
+                    </span>
+                    <span class="model-tag">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        ~50ms inference
+                    </span>
+                    <span class="model-tag">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+                        48x48 input
+                    </span>
+                    <span class="model-tag">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        Haar Cascade
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: Analysis Panel -->
+        <section class="analysis-section">
+            <!-- Current Emotion Display -->
+            <div class="current-emotion glass" id="emotionCard">
+                <div class="emotion-main">
+                    <div class="emotion-emoji-wrap">
+                        <span class="emotion-emoji" id="emotionEmoji">😐</span>
+                        <svg class="confidence-ring" viewBox="0 0 120 120" id="confRing">
+                            <circle class="ring-track" cx="60" cy="60" r="52"/>
+                            <circle class="ring-fill" cx="60" cy="60" r="52" id="ringFill"/>
+                        </svg>
+                    </div>
+                    <div class="emotion-info">
+                        <h2 class="emotion-label" id="emotionLabel">Waiting...</h2>
+                        <p class="emotion-conf-text" id="emotionConfText">Start camera to begin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emotion Bars -->
+            <div class="emotion-bars-card glass">
+                <h3 class="card-title">Emotion Probabilities</h3>
+                <div class="emotion-bars" id="emotionBars">
+                    <div class="bar-row" data-emotion="Angry">
+                        <span class="bar-label">😠 Angry</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Angry"></div></div>
+                        <span class="bar-value" id="val-Angry">0%</span>
+                    </div>
+                    <div class="bar-row" data-emotion="Disgust">
+                        <span class="bar-label">🤢 Disgust</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Disgust"></div></div>
+                        <span class="bar-value" id="val-Disgust">0%</span>
+                    </div>
+                    <div class="bar-row" data-emotion="Fear">
+                        <span class="bar-label">😨 Fear</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Fear"></div></div>
+                        <span class="bar-value" id="val-Fear">0%</span>
+                    </div>
+                    <div class="bar-row" data-emotion="Happy">
+                        <span class="bar-label">😊 Happy</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Happy"></div></div>
+                        <span class="bar-value" id="val-Happy">0%</span>
+                    </div>
+                    <div class="bar-row" data-emotion="Sad">
+                        <span class="bar-label">😢 Sad</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Sad"></div></div>
+                        <span class="bar-value" id="val-Sad">0%</span>
+                    </div>
+                    <div class="bar-row" data-emotion="Surprise">
+                        <span class="bar-label">😲 Surprise</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Surprise"></div></div>
+                        <span class="bar-value" id="val-Surprise">0%</span>
+                    </div>
+                    <div class="bar-row" data-emotion="Neutral">
+                        <span class="bar-label">😐 Neutral</span>
+                        <div class="bar-track"><div class="bar-fill" id="bar-Neutral"></div></div>
+                        <span class="bar-value" id="val-Neutral">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Emotion Timeline -->
+            <div class="timeline-card glass">
+                <h3 class="card-title">Emotion Timeline</h3>
+                <canvas id="timeline" height="60"></canvas>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-card glass">
+                    <span class="stat-value" id="totalFrames">0</span>
+                    <span class="stat-label">Frames</span>
+                </div>
+                <div class="stat-card glass">
+                    <span class="stat-value" id="totalFaces">0</span>
+                    <span class="stat-label">Detections</span>
+                </div>
+                <div class="stat-card glass">
+                    <span class="stat-value" id="avgConf">—</span>
+                    <span class="stat-label">Avg Confidence</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="privacy-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            Privacy Status: Local Processing Only — No data leaves your machine
+        </div>
+    </footer>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
